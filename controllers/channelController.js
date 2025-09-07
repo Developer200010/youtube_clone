@@ -23,27 +23,47 @@ export const createChannel = async (req, res) => {
   }
 };
 
-// @desc Get all channels
+// @desc Get all channels (with subscriber count)
 export const getChannels = async (req, res) => {
   try {
     const channels = await Channel.find().populate("owner", "username email");
-    res.json(channels);
+
+    // add subscribersCount for each channel
+    const formatted = channels.map(channel => ({
+      _id: channel._id,
+      name: channel.name,
+      description: channel.description,
+      banner: channel.banner,
+      owner: channel.owner,
+      subscribersCount: channel.subscribers.length
+    }));
+
+    res.json(formatted);
   } catch (error) {
     res.status(500).json({ message: "Error fetching channels", error: error.message });
   }
 };
 
-// @desc Get single channel by ID
+
+// @desc Get single channel by ID (with subscriber count)
 export const getChannelById = async (req, res) => {
   try {
     const channel = await Channel.findById(req.params.id).populate("owner", "username email");
     if (!channel) return res.status(404).json({ message: "Channel not found" });
 
-    res.json(channel);
+    res.json({
+      _id: channel._id,
+      name: channel.name,
+      description: channel.description,
+      banner: channel.banner,
+      owner: channel.owner,
+      subscribersCount: channel.subscribers.length
+    });
   } catch (error) {
     res.status(500).json({ message: "Error fetching channel", error: error.message });
   }
 };
+
 
 // @desc Update channel (only owner can update)
 export const updateChannel = async (req, res) => {
