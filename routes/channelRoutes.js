@@ -6,7 +6,8 @@ import {
   updateChannel,
   deleteChannel,
   subscribeChannel,
-  unsubscribeChannel
+  unsubscribeChannel,
+   getSubscribers
 } from "../controllers/channelController.js";
 import { protect } from "../middlewares/authMiddleware.js";
 
@@ -25,5 +26,8 @@ router.delete("/:id", protect, deleteChannel);
 // Subscription routes
 router.post("/:id/subscribe", protect, subscribeChannel);
 router.post("/:id/unsubscribe", protect, unsubscribeChannel);
+
+// Subscribers list
+router.get("/:id/subscribers", protect, getSubscribers);
 
 export default router;

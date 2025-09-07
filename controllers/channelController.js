@@ -26,7 +26,6 @@ export const createChannel = async (req, res) => {
 // @desc Get all channels
 export const getChannels = async (req, res) => {
   try {
-    console.log("it hit")
     const channels = await Channel.find().populate("owner", "username email");
     res.json(channels);
   } catch (error) {
@@ -125,5 +124,26 @@ export const unsubscribeChannel = async (req, res) => {
     res.json({ message: "Unsubscribed successfully ✅", subscribersCount: channel.subscribers.length });
   } catch (error) {
     res.status(500).json({ message: "Error unsubscribing", error: error.message });
+  }
+};
+
+
+
+// @desc Get list of subscribers for a channel
+export const getSubscribers = async (req, res) => {
+  try {
+    const channel = await Channel.findById(req.params.id).populate("subscribers", "username email");
+
+    if (!channel) {
+      return res.status(404).json({ message: "Channel not found" });
+    }
+
+    res.json({
+      channel: channel.name,
+      subscribersCount: channel.subscribers.length,
+      subscribers: channel.subscribers
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching subscribers", error: error.message });
   }
 };
