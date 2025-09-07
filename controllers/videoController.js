@@ -20,32 +20,61 @@ export const createVideo = async (req, res) => {
     }
 };
 
-// @desc Get all videos (public)
-export const getVideos = async (req, res) => {
-    try {
-        const videos = await Video.find()
-            .populate("channel", "name owner")
-            .sort({ createdAt: -1 });
 
-        res.json(videos);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching videos", error: error.message });
-    }
+// @desc Get all videos (with counts)
+export const getVideos = async (req, res) => {
+  try {
+    const videos = await Video.find()
+      .populate("channel", "name owner")
+      .sort({ createdAt: -1 });
+
+    const formatted = videos.map(video => ({
+      _id: video._id,
+      title: video.title,
+      description: video.description,
+      thumbnail: video.thumbnail,
+      channel: video.channel,
+      views: video.views,
+      likesCount: video.likes.length,
+      dislikesCount: video.dislikes.length,
+      createdAt: video.createdAt
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching videos", error: error.message });
+  }
 };
 
+
 // @desc Get single video by ID (public)
+// @desc Get single video by ID (with views + likes/dislikes count)
 export const getVideoById = async (req, res) => {
-    try {
-        const video = await Video.findById(req.params.id)
-            .populate("channel", "name owner");
-        if (!video) return res.status(404).json({ message: "Video not found" });
-        // Increment views
-        video.views += 1;
-        await video.save();
-        res.json(video);
-    } catch (error) {
-        res.status(500).json({ message: "Error fetching video", error: error.message });
-    }
+  try {
+    const video = await Video.findById(req.params.id)
+      .populate("channel", "name owner");
+
+    if (!video) return res.status(404).json({ message: "Video not found" });
+
+    // Increment views
+    video.views += 1;
+    await video.save();
+
+    res.json({
+      _id: video._id,
+      title: video.title,
+      description: video.description,
+      url: video.url,
+      thumbnail: video.thumbnail,
+      channel: video.channel,
+      views: video.views,
+      likesCount: video.likes.length,
+      dislikesCount: video.dislikes.length,
+      createdAt: video.createdAt
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching video", error: error.message });
+  }
 };
 
 // @desc Update video (only channel owner)
@@ -145,6 +174,33 @@ export const dislikeVideo = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error disliking video", error: error.message });
+  }
+};
+
+// @desc Get all videos for a specific channel
+export const getChannelVideos = async (req, res) => {
+  try {
+    const channelId = req.params.channelId;
+
+    const videos = await Video.find({ channel: channelId })
+      .populate("channel", "name owner")
+      .sort({ createdAt: -1 });
+
+    const formatted = videos.map(video => ({
+      _id: video._id,
+      title: video.title,
+      description: video.description,
+      thumbnail: video.thumbnail,
+      channel: video.channel,
+      views: video.views,
+      likesCount: video.likes.length,
+      dislikesCount: video.dislikes.length,
+      createdAt: video.createdAt
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching channel videos", error: error.message });
   }
 };
 

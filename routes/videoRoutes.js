@@ -2,7 +2,7 @@ import express from "express";
 import {
     createVideo, getVideos, getVideoById, updateVideo,
     deleteVideo, likeVideo,
-    dislikeVideo
+    dislikeVideo, getChannelVideos
 } from "../controllers/videoController.js";
 import { protect } from "../middlewares/authMiddleware.js";
 import { isChannelOwner } from "../middlewares/ownerShipMiddlerWare.js";
@@ -27,5 +27,9 @@ router.delete("/:id", protect, deleteVideo);
 // Like & Dislike routes (protected)
 router.post("/:id/like", protect, likeVideo);
 router.post("/:id/dislike", protect, dislikeVideo);
+
+// Get all videos from a specific channel (public)
+router.get("/channel/:channelId", getChannelVideos);
+
 
 export default router;
