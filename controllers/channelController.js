@@ -68,6 +68,7 @@ export const updateChannel = async (req, res) => {
   }
 };
 
+// deleting channel
 export const deleteChannel = async (req, res) => {
   try {
     const channel = await Channel.findById(req.params.id);
@@ -81,5 +82,48 @@ export const deleteChannel = async (req, res) => {
     res.json({ message: "Channel deleted ✅" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting channel", error: error.message });
+  }
+};
+
+// subscribing channel
+export const subscribeChannel = async (req, res) => {
+  try {
+    const channel = await Channel.findById(req.params.id);
+    if (!channel) return res.status(404).json({ message: "Channel not found" });
+
+    // Check if already subscribed
+    if (channel.subscribers.includes(req.user.id)) {
+      return res.status(400).json({ message: "Already subscribed" });
+    }
+
+    channel.subscribers.push(req.user.id);
+    await channel.save();
+
+    res.json({ message: "Subscribed successfully ✅", subscribersCount: channel.subscribers.length });
+  } catch (error) {
+    res.status(500).json({ message: "Error subscribing", error: error.message });
+  }
+};
+
+// unsubscribing channel
+
+export const unsubscribeChannel = async (req, res) => {
+  try {
+    const channel = await Channel.findById(req.params.id);
+    if (!channel) return res.status(404).json({ message: "Channel not found" });
+
+    // Check if not subscribed
+    if (!channel.subscribers.includes(req.user.id)) {
+      return res.status(400).json({ message: "Not subscribed" });
+    }
+
+    channel.subscribers = channel.subscribers.filter(
+      subId => subId.toString() !== req.user.id
+    );
+
+    await channel.save();
+    res.json({ message: "Unsubscribed successfully ✅", subscribersCount: channel.subscribers.length });
+  } catch (error) {
+    res.status(500).json({ message: "Error unsubscribing", error: error.message });
   }
 };
