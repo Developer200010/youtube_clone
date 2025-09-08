@@ -6,6 +6,7 @@ const videoSchema = new mongoose.Schema({
   url: { type: String, required: true },
   thumbnail: { type: String },
   channel: { type: mongoose.Schema.Types.ObjectId, ref: "Channel", required: true },
+  category: { type: String, default: "General" },   // new field
   views: { type: Number, default: 0 },
   likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   dislikes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]

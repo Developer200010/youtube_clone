@@ -2,22 +2,22 @@ import Video from "../models/videoModel.js";
 
 // @desc Upload a new video
 export const createVideo = async (req, res) => {
-    try {
-        const { title, description, url, thumbnail } = req.body;
+  try {
+    const { title, description, url, thumbnail } = req.body;
 
-        const video = new Video({
-            title,
-            description,
-            url,
-            thumbnail,
-            channel: req.channel._id  // from middleware
-        });
+    const video = new Video({
+      title,
+      description,
+      url,
+      thumbnail,
+      channel: req.channel._id  // from middleware
+    });
 
-        await video.save();
-        res.status(201).json({ message: "Video uploaded ✅", video });
-    } catch (error) {
-        res.status(500).json({ message: "Error uploading video", error: error.message });
-    }
+    await video.save();
+    res.status(201).json({ message: "Video uploaded ✅", video });
+  } catch (error) {
+    res.status(500).json({ message: "Error uploading video", error: error.message });
+  }
 };
 
 
@@ -34,6 +34,7 @@ export const getVideos = async (req, res) => {
       description: video.description,
       thumbnail: video.thumbnail,
       channel: video.channel,
+      category: video.category,
       views: video.views,
       likesCount: video.likes.length,
       dislikesCount: video.dislikes.length,
@@ -67,6 +68,7 @@ export const getVideoById = async (req, res) => {
       url: video.url,
       thumbnail: video.thumbnail,
       channel: video.channel,
+      category: video.category,
       views: video.views,
       likesCount: video.likes.length,
       dislikesCount: video.dislikes.length,
@@ -192,6 +194,7 @@ export const getChannelVideos = async (req, res) => {
       description: video.description,
       thumbnail: video.thumbnail,
       channel: video.channel,
+      category: video.category,
       views: video.views,
       likesCount: video.likes.length,
       dislikesCount: video.dislikes.length,
@@ -204,3 +207,41 @@ export const getChannelVideos = async (req, res) => {
   }
 };
 
+// @desc Search & filter videos
+export const searchVideos = async (req, res) => {
+  try {
+    const { title, category } = req.query;
+    console.log(title,category)
+
+    let query = {};
+
+    if (title) {
+      query.title = { $regex: title, $options: "i" }; // case-insensitive search
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    const videos = await Video.find(query)
+      .populate("channel", "name owner")
+      .sort({ createdAt: -1 });
+
+    const formatted = videos.map(video => ({
+      _id: video._id,
+      title: video.title,
+      description: video.description,
+      thumbnail: video.thumbnail,
+      category: video.category,
+      channel: video.channel,
+      views: video.views,
+      likesCount: video.likes.length,
+      dislikesCount: video.dislikes.length,
+      createdAt: video.createdAt
+    }));
+
+    res.json(formatted);
+  } catch (error) {
+    res.status(500).json({ message: "Error searching videos", error: error.message });
+  }
+};

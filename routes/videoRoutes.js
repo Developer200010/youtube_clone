@@ -1,35 +1,34 @@
 import express from "express";
 import {
-    createVideo, getVideos, getVideoById, updateVideo,
-    deleteVideo, likeVideo,
-    dislikeVideo, getChannelVideos
+  createVideo,
+  getVideos,
+  getVideoById,
+  updateVideo,
+  deleteVideo,
+  likeVideo,
+  dislikeVideo,
+  getChannelVideos,
+  searchVideos
 } from "../controllers/videoController.js";
 import { protect } from "../middlewares/authMiddleware.js";
-import { isChannelOwner } from "../middlewares/ownerShipMiddlerWare.js";
 
 const router = express.Router();
 
-// Create video (only channel owner)
-router.post("/:channelId", protect, isChannelOwner, createVideo);
+// ✅ Specific routes first
+router.get("/search", searchVideos);                // Search & filter
+router.get("/channel/:channelId", getChannelVideos); // Channel video library
 
-// Get all videos (public)
-router.get("/", getVideos);
+// ✅ General video routes
+router.get("/", getVideos);                         // Get all videos
+router.get("/:id", getVideoById);                   // Get single video
 
-// Get single video (public)
-router.get("/:id", getVideoById);
+// ✅ Protected routes
+router.post("/", protect, createVideo);             // Upload video
+router.put("/:id", protect, updateVideo);           // Update video
+router.delete("/:id", protect, deleteVideo);        // Delete video
 
-// Update video (only channel owner)
-router.put("/:id", protect, updateVideo);
-
-// Delete video (only channel owner)
-router.delete("/:id", protect, deleteVideo);
-
-// Like & Dislike routes (protected)
-router.post("/:id/like", protect, likeVideo);
-router.post("/:id/dislike", protect, dislikeVideo);
-
-// Get all videos from a specific channel (public)
-router.get("/channel/:channelId", getChannelVideos);
-
+// ✅ Engagement routes
+router.post("/:id/like", protect, likeVideo);       // Like video
+router.post("/:id/dislike", protect, dislikeVideo); // Dislike video
 
 export default router;
