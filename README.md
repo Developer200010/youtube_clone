@@ -19,6 +19,19 @@ It allows users to create channels, upload videos, like/dislike content, subscri
 
 ---
 
+
+## Screen Shorts
+
+<p align="center">
+  <img src="./screenShorts/home.png" alt="Light Mode" width="45%" style="margin-right:10px;">
+  <img src="./screenShorts/sigleVideo.png" alt="Dark Mode" width="45%">
+  <img src="./screenShorts/searchPage.png" alt="Dark Mode" width="45%">
+  <img src="./screenShorts/channelPage.png" alt="Dark Mode" width="45%">
+  <img src="./screenShorts/uploadpage.png" alt="Dark Mode" width="45%">
+</p>
+
+
+
 ## 🛠️ Tech Stack
 
 **Frontend**  
