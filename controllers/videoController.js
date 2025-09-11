@@ -1,16 +1,34 @@
 import Video from "../models/videoModel.js";
-
+import { uploadToCloudinary } from "../utils/uploadCloudinary.js";
 // @desc Upload a new video
 export const createVideo = async (req, res) => {
   try {
-    const { title, description, url, thumbnail } = req.body;
+    const { title, description } = req.body;
+
+    if (!req.files || !req.files.video || !req.files.thumbnail) {
+      return res.status(400).json({ message: "Video and thumbnail are required" });
+    }
+
+    // Upload thumbnail (image)
+    const thumbnailUpload = await uploadToCloudinary(
+      req.files.thumbnail[0].buffer,
+      "thumbnails",
+      "image"
+    );
+
+    // Upload video
+    const videoUpload = await uploadToCloudinary(
+      req.files.video[0].buffer,
+      "videos",
+      "video"
+    );
 
     const video = new Video({
       title,
       description,
-      url,
-      thumbnail,
-      channel: req.channel._id  // from middleware
+      url: videoUpload.secure_url,
+      thumbnail: thumbnailUpload.secure_url,
+      channel: req.channel._id, // from middleware
     });
 
     await video.save();
@@ -25,7 +43,7 @@ export const createVideo = async (req, res) => {
 export const getVideos = async (req, res) => {
   try {
     const videos = await Video.find()
-      .populate("channel", "name owner")
+      .populate("channel", "name owner subscribers")
       .sort({ createdAt: -1 });
 
     const formatted = videos.map(video => ({
@@ -36,6 +54,7 @@ export const getVideos = async (req, res) => {
       channel: video.channel,
       category: video.category,
       views: video.views,
+      subscribersCount: video.channel?.subscribers?.length || 0,
       likesCount: video.likes.length,
       dislikesCount: video.dislikes.length,
       createdAt: video.createdAt
@@ -53,13 +72,9 @@ export const getVideos = async (req, res) => {
 export const getVideoById = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id)
-      .populate("channel", "name owner");
+      .populate("channel", "name owner subscribers");
 
     if (!video) return res.status(404).json({ message: "Video not found" });
-
-    // Increment views
-    video.views += 1;
-    await video.save();
 
     res.json({
       _id: video._id,
@@ -69,15 +84,31 @@ export const getVideoById = async (req, res) => {
       thumbnail: video.thumbnail,
       channel: video.channel,
       category: video.category,
-      views: video.views,
+      views: video.views,  // just return current count
+      subscribersCount: video.channel?.subscribers?.length || 0,
       likesCount: video.likes.length,
       dislikesCount: video.dislikes.length,
-      createdAt: video.createdAt
+      createdAt: video.createdAt,
     });
   } catch (error) {
     res.status(500).json({ message: "Error fetching video", error: error.message });
   }
 };
+
+export const increaseView = async (req,res) =>{
+  try {
+    const video = await Video.findById(req.params.id);
+    if (!video) return res.status(404).json({ message: "Video not found" });
+
+    video.views += 1;
+    await video.save();
+
+    res.json({ views: video.views });
+  } catch (error) {
+    res.status(500).json({ message: "Error incrementing view", error: error.message });
+  }
+}
+
 
 // @desc Update video (only channel owner)
 export const updateVideo = async (req, res) => {
@@ -187,7 +218,6 @@ export const getChannelVideos = async (req, res) => {
     const videos = await Video.find({ channel: channelId })
       .populate("channel", "name owner")
       .sort({ createdAt: -1 });
-
     const formatted = videos.map(video => ({
       _id: video._id,
       title: video.title,
@@ -211,10 +241,7 @@ export const getChannelVideos = async (req, res) => {
 export const searchVideos = async (req, res) => {
   try {
     const { title, category } = req.query;
-    console.log(title,category)
-
     let query = {};
-
     if (title) {
       query.title = { $regex: title, $options: "i" }; // case-insensitive search
     }

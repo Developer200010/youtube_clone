@@ -1,22 +1,34 @@
 import Channel from "../models/channelModel.js";
-
+import { uploadToCloudinary } from "../utils/uploadCloudinary.js";
 //creating a channel
 export const createChannel = async (req, res) => {
   try {
     const { name, description, banner } = req.body;
 
-    // check if channel already exists
+    // ✅ check if channel already exists
     const existingChannel = await Channel.findOne({ name });
-    if (existingChannel) return res.status(400).json({ message: "Channel name already taken" });
+    if (existingChannel) {
+      return res.status(400).json({ message: "Channel name already taken" });
+    }
+
+    let logoUrl = null;
+
+    // ✅ if user uploaded a logo
+    if (req.file) {
+      const uploadResult = await uploadToCloudinary(req.file.buffer, "channel_logos", "image");
+      logoUrl = uploadResult.secure_url;
+    }
 
     const channel = new Channel({
       name,
       description,
       banner,
-      owner: req.user.id
+      logo: logoUrl,         // store uploaded logo
+      owner: req.user.id,    // logged-in user
     });
 
     await channel.save();
+
     res.status(201).json({ message: "Channel created ✅", channel });
   } catch (error) {
     res.status(500).json({ message: "Error creating channel", error: error.message });
@@ -56,6 +68,7 @@ export const getChannelById = async (req, res) => {
       name: channel.name,
       description: channel.description,
       banner: channel.banner,
+      logo: channel.logo,
       owner: channel.owner,
       subscribersCount: channel.subscribers.length
     });
@@ -104,49 +117,40 @@ export const deleteChannel = async (req, res) => {
   }
 };
 
-// subscribing channel
-export const subscribeChannel = async (req, res) => {
+export const toggleSubscribe = async (req, res) => {
   try {
     const channel = await Channel.findById(req.params.id);
-    if (!channel) return res.status(404).json({ message: "Channel not found" });
-
-    // Check if already subscribed
-    if (channel.subscribers.includes(req.user.id)) {
-      return res.status(400).json({ message: "Already subscribed" });
+    if (!channel) {
+      return res.status(404).json({ message: "Channel not found" });
     }
 
-    channel.subscribers.push(req.user.id);
-    await channel.save();
+    const isSubscribed = channel.subscribers.includes(req.user.id);
 
-    res.json({ message: "Subscribed successfully ✅", subscribersCount: channel.subscribers.length });
-  } catch (error) {
-    res.status(500).json({ message: "Error subscribing", error: error.message });
-  }
-};
-
-// unsubscribing channel
-
-export const unsubscribeChannel = async (req, res) => {
-  try {
-    const channel = await Channel.findById(req.params.id);
-    if (!channel) return res.status(404).json({ message: "Channel not found" });
-
-    // Check if not subscribed
-    if (!channel.subscribers.includes(req.user.id)) {
-      return res.status(400).json({ message: "Not subscribed" });
+    if (isSubscribed) {
+      // Unsubscribe
+      channel.subscribers = channel.subscribers.filter(
+        subId => subId.toString() !== req.user.id
+      );
+      await channel.save();
+      return res.json({
+        message: "Unsubscribed successfully ✅",
+        subscribersCount: channel.subscribers.length,
+        subscribed: false,
+      });
+    } else {
+      // Subscribe
+      channel.subscribers.push(req.user.id);
+      await channel.save();
+      return res.json({
+        message: "Subscribed successfully ✅",
+        subscribersCount: channel.subscribers.length,
+        subscribed: true,
+      });
     }
-
-    channel.subscribers = channel.subscribers.filter(
-      subId => subId.toString() !== req.user.id
-    );
-
-    await channel.save();
-    res.json({ message: "Unsubscribed successfully ✅", subscribersCount: channel.subscribers.length });
   } catch (error) {
-    res.status(500).json({ message: "Error unsubscribing", error: error.message });
+    res.status(500).json({ message: "Error toggling subscription", error: error.message });
   }
 };
-
 
 
 // @desc Get list of subscribers for a channel
@@ -167,3 +171,17 @@ export const getSubscribers = async (req, res) => {
     res.status(500).json({ message: "Error fetching subscribers", error: error.message });
   }
 };
+
+
+export const getChannelByUserId = async (req,res) =>{
+  try {
+    const channel = await Channel.findOne({ owner: req.params.userId });
+    if (!channel) {
+      return res.status(404).json({ message: "No channel found" });
+    }
+    res.json(channel);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+

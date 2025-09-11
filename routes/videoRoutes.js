@@ -8,9 +8,12 @@ import {
   likeVideo,
   dislikeVideo,
   getChannelVideos,
-  searchVideos
+  searchVideos,
+  increaseView
 } from "../controllers/videoController.js";
 import { protect } from "../middlewares/authMiddleware.js";
+import {isChannelOwner} from "../middlewares/ownerShipMiddlerWare.js"
+import upload from "../middlewares/multer.js"
 
 const router = express.Router();
 
@@ -23,12 +26,17 @@ router.get("/", getVideos);                         // Get all videos
 router.get("/:id", getVideoById);                   // Get single video
 
 // ✅ Protected routes
-router.post("/", protect, createVideo);             // Upload video
+router.post("/:channelId", protect, isChannelOwner,upload.fields([{ name: "video" }, { name: "thumbnail" }]), createVideo);             // Upload video
 router.put("/:id", protect, updateVideo);           // Update video
 router.delete("/:id", protect, deleteVideo);        // Delete video
 
 // ✅ Engagement routes
 router.post("/:id/like", protect, likeVideo);       // Like video
 router.post("/:id/dislike", protect, dislikeVideo); // Dislike video
+
+router.patch("/videos/:id/view", increaseView);
+
+
+
 
 export default router;
