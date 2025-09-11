@@ -43,7 +43,7 @@ export const createVideo = async (req, res) => {
 export const getVideos = async (req, res) => {
   try {
     const videos = await Video.find()
-      .populate("channel", "name owner subscribers")
+      .populate("channel", "name owner subscribers logo")
       .sort({ createdAt: -1 });
 
     const formatted = videos.map(video => ({
@@ -72,7 +72,7 @@ export const getVideos = async (req, res) => {
 export const getVideoById = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id)
-      .populate("channel", "name owner subscribers");
+      .populate("channel", "name owner subscribers logo");
 
     if (!video) return res.status(404).json({ message: "Video not found" });
 
@@ -114,22 +114,43 @@ export const increaseView = async (req,res) =>{
 export const updateVideo = async (req, res) => {
   try {
     const video = await Video.findById(req.params.id).populate("channel");
-
     if (!video) return res.status(404).json({ message: "Video not found" });
 
-    // check ownership
+    // ownership check
     if (video.channel.owner.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized to update this video" });
     }
 
-    const updatedVideo = await Video.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
+    const updates = {};
+
+    // handle text updates
+    if (req.body.title) updates.title = req.body.title;
+    if (req.body.description) updates.description = req.body.description;
+
+    // handle file uploads
+    if (req.files?.thumbnail) {
+      const thumb = await uploadToCloudinary(
+        req.files.thumbnail[0].buffer,
+        "thumbnails",
+        "image"
+      );
+      updates.thumbnail = thumb.secure_url;
+    }
+
+    if (req.files?.video) {
+      const uploadedVideo = await uploadToCloudinary(
+        req.files.video[0].buffer,
+        "videos",
+        "video"
+      );
+      updates.url = uploadedVideo.secure_url;
+    }
+
+    const updatedVideo = await Video.findByIdAndUpdate(req.params.id, updates, { new: true });
 
     res.json({ message: "Video updated ✅", updatedVideo });
   } catch (error) {
+    console.error("Error updating video:", error);
     res.status(500).json({ message: "Error updating video", error: error.message });
   }
 };
