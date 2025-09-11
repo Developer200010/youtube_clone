@@ -195,23 +195,26 @@ export default function VideoDetail() {
         {/* Channel Info + Subscribe */}
         <div className="flex items-center justify-between mt-4 border-b pb-3">
           <Link to={`/channel/${video?.channel?._id}`}>
-          <div className="flex items-center gap-3">
-            <img src={video?.channel?.logo} className="w-12 h-12 rounded-full bg-gray-300"/>
-            <div>
-              <p className="font-semibold">{video.channel?.name}</p>
-              <p className="text-sm text-gray-500">
-                {video?.subscribersCount ?? 0} subscribers
-              </p>
+            <div className="flex items-center gap-3">
+              <img
+                src={video?.channel?.logo}
+                alt={video?.channel?.name || "Channel Logo"}
+                className="w-12 h-12 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow bg-gray-100"
+              />
+              <div>
+                <p className="font-semibold">{video.channel?.name}</p>
+                <p className="text-sm text-gray-500">
+                  {video?.subscribersCount ?? 0} subscribers
+                </p>
+              </div>
             </div>
-          </div>
           </Link>
           <button
             onClick={() => handleProtectedAction(handleSubscribe)}
-            className={`px-4 py-2 rounded-full ${
-              isSubscribed
+            className={`px-4 py-2 rounded-full ${isSubscribed
                 ? "bg-gray-300 text-black hover:bg-gray-400"
                 : "bg-red-600 text-white hover:bg-red-700"
-            }`}
+              }`}
           >
             {isSubscribed ? "Subscribed" : "Subscribe"}
           </button>
@@ -232,8 +235,10 @@ export default function VideoDetail() {
 
           {/* Add Comment */}
           <form
-            onSubmit={(e) =>{e.preventDefault()
-               handleProtectedAction(() => handleAddComment(e))}}
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleProtectedAction(() => handleAddComment(e))
+            }}
             className="flex items-center gap-2 mb-4"
           >
             <input
